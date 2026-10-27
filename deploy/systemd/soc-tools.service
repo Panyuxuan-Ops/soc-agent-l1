@@ -1,0 +1,24 @@
+[Unit]
+Description=SOC L1 read-only tool service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=socagent
+Group=socagent
+WorkingDirectory=/opt/soc-agent-l1
+EnvironmentFile=/etc/soc-agent-l1.env
+Environment=PYTHONPATH=/opt/soc-agent-l1/src
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/soc-agent-l1/.venv/bin/python -m soc_agent serve tools --host 0.0.0.0 --port 8001
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/soc-agent-l1/data /opt/soc-agent-l1/runtime
+
+[Install]
+WantedBy=multi-user.target

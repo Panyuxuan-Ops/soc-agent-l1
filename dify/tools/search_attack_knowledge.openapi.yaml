@@ -1,0 +1,98 @@
+openapi: 3.0.3
+info:
+  title: SOC L1 - ATT&CK / IOC Knowledge Search
+  version: 1.0.0
+  description: |
+    L1 分诊只读工具。在 MITRE ATT&CK 精简子集与演示 IOC 列表中检索。
+    生产环境该工具内部调用 Dify Dataset Retrieve API；本地降级为 BM25。
+servers:
+  - url: http://host.docker.internal:8001
+    description: 本机演示（Docker Desktop）；Linux 改成 http://172.17.0.1:8001
+security:
+  - bearerAuth: []
+paths:
+  /tools/search_attack_knowledge:
+    post:
+      operationId: search_attack_knowledge
+      summary: 检索 ATT&CK 技术与 IOC
+      description: |
+        根据规则描述、技术 ID 或源 IP 检索相关技术摘要与 IOC。
+        返回结果包含 type=attack 或 type=ioc，可用于解释行为与补充证据。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                query:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+                  description: 告警关键词、规则描述或技术 ID，例如 ssh brute force 或 T1110
+                top_k:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 3
+                  description: 返回条数，默认 3
+              required:
+                - query
+      responses:
+        "200":
+          description: 检索成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  tool:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      query:
+                        type: string
+                      top_k:
+                        type: integer
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            doc_id:
+                              type: string
+                            type:
+                              type: string
+                            title:
+                              type: string
+                            technique_id:
+                              type: string
+                              nullable: true
+                            tactics:
+                              type: array
+                              items:
+                                type: string
+                            score:
+                              type: number
+                            excerpt:
+                              type: string
+                            url:
+                              type: string
+                              nullable: true
+                            source:
+                              type: string
+                          additionalProperties: true
+                    additionalProperties: true
+                  meta:
+                    type: object
+                    additionalProperties: true
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: TOOL_API_TOKEN

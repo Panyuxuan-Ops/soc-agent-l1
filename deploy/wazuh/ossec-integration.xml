@@ -1,0 +1,15 @@
+<!--
+  把这段放到 Wazuh manager 的 /var/ossec/etc/ossec.conf 的 <ossec_config> 内。
+  修改后执行：/var/ossec/bin/wazuh-control restart
+
+  说明：
+  - <level>3</level> 让 level>=3 的告警进入 L1；level 1-2 仍留在 Wazuh。
+  - 自定义集成脚本只做转发，超时 3 秒；不会在 Wazuh 线程里调用 LLM。
+  - 脚本和 token 权限见 deploy/wazuh/custom-soc-agent.py 顶部注释。
+-->
+<integration>
+  <name>custom-soc-agent.py</name>
+  <hook_url>http://127.0.0.1:8000/ingest/wazuh</hook_url>
+  <level>3</level>
+  <alert_format>json</alert_format>
+</integration>

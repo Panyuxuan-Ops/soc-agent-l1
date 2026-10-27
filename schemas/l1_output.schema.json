@@ -1,0 +1,83 @@
+{
+  "$defs": {
+    "EvidenceItem": {
+      "additionalProperties": false,
+      "description": "标准 evidence 项：工具名、调用参数、关键发现。",
+      "properties": {
+        "tool": {
+          "description": "证据来源/工具名",
+          "enum": [
+            "fetch_wazuh_alerts",
+            "search_attack_knowledge",
+            "alert_rule",
+            "policy"
+          ],
+          "title": "Tool",
+          "type": "string"
+        },
+        "params": {
+          "additionalProperties": true,
+          "description": "工具调用参数；无参数时传空对象",
+          "title": "Params",
+          "type": "object"
+        },
+        "key_finding": {
+          "description": "关键发现",
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Key Finding",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tool",
+        "params",
+        "key_finding"
+      ],
+      "title": "EvidenceItem",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "标准 L1 输出：decision / confidence / reason / evidence。",
+  "properties": {
+    "decision": {
+      "enum": [
+        "close",
+        "watch",
+        "escalate"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "confidence": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "reason": {
+      "description": "不超过 50 字",
+      "maxLength": 50,
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "evidence": {
+      "items": {
+        "$ref": "#/$defs/EvidenceItem"
+      },
+      "maxItems": 8,
+      "title": "Evidence",
+      "type": "array"
+    }
+  },
+  "required": [
+    "decision",
+    "confidence",
+    "reason",
+    "evidence"
+  ],
+  "title": "L1Output",
+  "type": "object"
+}

@@ -1,0 +1,13 @@
+value,type,threat,confidence,source,first_seen,note
+203.0.113.45,ip,演示用 SSH 暴力破解源,0.90,synthetic-demo,2026-10-01,保留文档地址，非真实情报
+198.51.100.77,ip,演示用 Web 扫描源,0.75,synthetic-demo,2026-10-01,保留文档地址，非真实情报
+192.0.2.88,ip,演示用 C2 回连地址,0.80,synthetic-demo,2026-09-20,保留文档地址，非真实情报
+malware-c2.example,domain,演示用 C2 域名,0.85,synthetic-demo,2026-09-20,保留示例域名
+phish-login.example,domain,演示用钓鱼域名,0.80,synthetic-demo,2026-09-21,保留示例域名
+update-check.example,domain,演示用下载域名,0.60,synthetic-demo,2026-09-22,保留示例域名
+0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef,sha256,演示用恶意样本哈希,0.70,synthetic-demo,2026-09-23,随机占位哈希
+abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789,sha256,演示用 Webshell 哈希,0.80,synthetic-demo,2026-09-24,随机占位哈希
+203.0.113.99,ip,演示用暴力破解源,0.65,synthetic-demo,2026-10-02,保留文档地址
+198.51.100.23,ip,演示用漏洞扫描源,0.70,synthetic-demo,2026-10-02,保留文档地址
+192.0.2.45,ip,演示用横向移动源,0.75,synthetic-demo,2026-10-03,保留文档地址
+evil-payload.example,domain,演示用载荷分发域名,0.70,synthetic-demo,2026-10-03,保留示例域名

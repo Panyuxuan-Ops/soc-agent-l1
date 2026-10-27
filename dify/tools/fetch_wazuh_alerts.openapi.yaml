@@ -1,0 +1,93 @@
+openapi: 3.0.3
+info:
+  title: SOC L1 - Wazuh Alert Query
+  version: 1.0.0
+  description: |
+    L1 分诊只读工具。查询最近 15 分钟的 Wazuh 告警，用于判断同源 IP
+    是否在短时间内重复触发。服务端固定时间窗口，模型不能传入任意时间范围。
+servers:
+  - url: http://host.docker.internal:8001
+    description: 本机演示（Docker Desktop）；Linux 改成 http://172.17.0.1:8001
+security:
+  - bearerAuth: []
+paths:
+  /tools/fetch_wazuh_alerts:
+    post:
+      operationId: fetch_wazuh_alerts
+      summary: 查询最近 15 分钟的 Wazuh 告警
+      description: |
+        返回告警列表与聚合统计。传入 src_ip 时，repeat_count 表示该源 IP
+        在窗口内的告警总数；is_repeat=true 表示 >=3 次。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 20
+                  default: 5
+                  description: 返回条数，默认 5，最大 20
+                min_level:
+                  type: integer
+                  minimum: 0
+                  maximum: 16
+                  description: 最低 Wazuh rule.level；不传则不过滤
+                src_ip:
+                  type: string
+                  minLength: 2
+                  maxLength: 64
+                  description: 源 IP（IPv4 或 IPv6）
+              required: []
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  tool:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      window_minutes:
+                        type: integer
+                      total:
+                        type: integer
+                      repeat_count:
+                        type: integer
+                      is_repeat:
+                        type: boolean
+                      unique_src_ips:
+                        type: integer
+                      max_level:
+                        type: integer
+                      first_seen:
+                        type: string
+                        nullable: true
+                      last_seen:
+                        type: string
+                        nullable: true
+                      alerts:
+                        type: array
+                        items:
+                          type: object
+                          additionalProperties: true
+                    additionalProperties: true
+                  meta:
+                    type: object
+                    additionalProperties: true
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: TOOL_API_TOKEN

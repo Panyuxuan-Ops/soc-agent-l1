@@ -1,0 +1,135 @@
+# Dify 1.17.x / 4C4G 云服务器内存 override
+#
+# 用法（在 Dify 官方 compose 目录执行）：
+#   cp /opt/soc-agent-l1/deploy/dify-cloud-4c4g.override.yml .
+#   docker compose -f docker-compose.yaml -f dify-cloud-4c4g.override.yml config
+#   docker compose -f docker-compose.yaml -f dify-cloud-4c4g.override.yml up -d
+#
+# 重要：
+# - 这里的数值是“单容器硬上限”，不是整栈预留；实际总占用看 docker stats。
+# - 4C4G 机器上 Dify 实测常驻约 1.6-1.8GB，上限合计约 3.0GB，
+#   剩余留给宿主机、Docker daemon、SSH 和页面缓存。
+# - mem_limit 与 memswap_limit 相同，禁止用 swap 掩盖内存超卖。
+# - Dify 1.17 的 `db` 已改名为 `db_postgres`，且新增 api_websocket、worker_beat、
+#   agent_backend、agent_ssrf_proxy、local_sandbox。旧版 1.16 的 override 直接套用
+#   会报 unknown service，必须使用本文件。
+# - api_websocket 属于 collaboration profile，.env 中 COMPOSE_PROFILES 不启用
+#   collaboration 时它不会启动；这里仍保留限制，避免手动启用后失控。
+# - worker_beat 不需要重复执行数据库迁移（迁移由 api 负责），
+#   否则每次重启都会因 `flask upgrade-db` 触发 OOM。
+# - 如果 Dify 使用 pgvector 而不是 weaviate，删除 weaviate 段，
+#   并把释放出的内存分给 db_postgres 或 api，不要保留不存在的 service。
+# - Dify 缓存 Redis 可以淘汰；本项目 SOC Stream Redis 是另一个实例，
+#   必须使用 noeviction（见 docs/CLOUD_DEPLOY.md）。
+
+services:
+  api:
+    mem_limit: 640m
+    memswap_limit: 640m
+    mem_swappiness: 0
+    # Linux 下让容器能解析 host.docker.internal；Docker 20.10+ 支持 host-gateway
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  api_websocket:
+    mem_limit: 128m
+    memswap_limit: 128m
+    mem_swappiness: 0
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  worker:
+    mem_limit: 512m
+    memswap_limit: 512m
+    mem_swappiness: 0
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  worker_beat:
+    mem_limit: 320m
+    memswap_limit: 320m
+    mem_swappiness: 0
+    environment:
+      MIGRATION_ENABLED: "false"
+
+  web:
+    mem_limit: 128m
+    memswap_limit: 128m
+    mem_swappiness: 0
+
+  db_postgres:
+    mem_limit: 320m
+    memswap_limit: 320m
+    mem_swappiness: 0
+
+  # Dify 内部缓存 / Celery broker Redis。
+  # 224m 是容器硬上限，200mb 是 Redis 逻辑内存上限；两者不要写成同一个值，
+  # 否则 Redis 自身开销可能导致容器被 OOM kill。
+  # 必须保留 requirepass，否则 api/worker 带密码连接会失败。
+  redis:
+    mem_limit: 224m
+    memswap_limit: 224m
+    mem_swappiness: 0
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD:-difyai123456}
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 200mb
+      - --maxmemory-policy
+      - allkeys-lru
+
+  # Dify 默认向量库；使用 pgvector 时删除此服务。
+  # 官方 compose 指向 cr.weaviate.io，该 registry 在国内会回落到 Docker Hub 并超时；
+  # 改用 Docker Hub 上的同一镜像，通过 daemon.json 的 registry-mirrors 拉取。
+  weaviate:
+    image: semitechnologies/weaviate:1.39.2
+    mem_limit: 320m
+    memswap_limit: 320m
+    mem_swappiness: 0
+
+  sandbox:
+    mem_limit: 128m
+    memswap_limit: 128m
+    mem_swappiness: 0
+
+  local_sandbox:
+    mem_limit: 96m
+    memswap_limit: 96m
+    mem_swappiness: 0
+
+  plugin_daemon:
+    mem_limit: 224m
+    memswap_limit: 224m
+    mem_swappiness: 0
+    # 官方 compose 默认把 5003 发布到 0.0.0.0，公网机器上必须关闭。
+    # 插件远程调试用不到；!reset 会清空基础 compose 里的 ports 列表。
+    ports: !reset []
+
+  agent_backend:
+    mem_limit: 192m
+    memswap_limit: 192m
+    mem_swappiness: 0
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  agent_ssrf_proxy:
+    mem_limit: 64m
+    memswap_limit: 64m
+    mem_swappiness: 0
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  ssrf_proxy:
+    mem_limit: 64m
+    memswap_limit: 64m
+    mem_swappiness: 0
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  nginx:
+    mem_limit: 48m
+    memswap_limit: 48m
+    mem_swappiness: 0

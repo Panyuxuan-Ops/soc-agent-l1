@@ -1,0 +1,52 @@
+# Dify 1.16 在 4C4G 机器上的内存硬限制
+#
+# 注意：这是早期草稿，Dify 缓存 Redis 仅 48MB。
+# 4C4G 云服务器真实联调请优先使用同目录的 dify-cloud-4c4g.override.yml
+# （Dify Redis 256MB + allkeys-lru，且含 host.docker.internal 配置）。
+#
+# 用法（在 Dify 官方 docker-compose.yml 旁边）：
+#   docker compose -f docker-compose.yml -f /opt/soc-agent-l1/deploy/dify-memory-3g.override.yml up -d
+#
+# 注意：
+# - 这是“整栈约 3GB”的预算，不是给单个 api 容器 3GB。
+# - 如果你的 Dify compose 使用 pgvector 而不是 weaviate，把 weaviate 的限额
+#   合并到 db，或删除不存在的 service。
+# - mem_limit 与 memswap_limit 设为相同值，禁止用 swap 掩盖内存超卖。
+# - Dify 的插件守护进程、sandbox 也可能启动额外进程；上线前用
+#   `docker stats --no-stream` 实测，总 RSS 超过 3GB 就继续下调。
+
+services:
+  api:
+    mem_limit: 700m
+    memswap_limit: 700m
+    mem_swappiness: 0
+  worker:
+    mem_limit: 600m
+    memswap_limit: 600m
+    mem_swappiness: 0
+  web:
+    mem_limit: 128m
+    memswap_limit: 128m
+  db:
+    mem_limit: 384m
+    memswap_limit: 384m
+  redis:
+    mem_limit: 64m
+    memswap_limit: 64m
+    # Dify 的缓存 Redis 可以淘汰；和本项目的 Stream Redis 不是同一个实例
+    command: ["redis-server", "--maxmemory", "48mb", "--maxmemory-policy", "allkeys-lru"]
+  weaviate:
+    mem_limit: 640m
+    memswap_limit: 640m
+  sandbox:
+    mem_limit: 128m
+    memswap_limit: 128m
+  plugin_daemon:
+    mem_limit: 256m
+    memswap_limit: 256m
+  ssrf_proxy:
+    mem_limit: 64m
+    memswap_limit: 64m
+  nginx:
+    mem_limit: 64m
+    memswap_limit: 64m

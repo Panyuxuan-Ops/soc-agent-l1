@@ -1,0 +1,117 @@
+# SOC Agent L1 本地/单机 Docker 部署
+#
+# 使用前：
+#   Copy-Item .env.example .env
+#   编辑 .env，至少确认 REDIS_URL、DIFY_*、APPROVAL_PUBLIC_URL
+#
+# 启动：
+#   docker compose -f deploy/docker-compose.yml up -d --build
+#
+# 只启动演示用的 mock Dify：
+#   docker compose -f deploy/docker-compose.yml --profile demo up -d --build
+
+name: soc-agent-l1
+
+x-common: &common
+  build:
+    context: ..
+    dockerfile: deploy/Dockerfile
+  image: soc-agent-l1:0.1.0
+  env_file:
+    - ../.env
+  environment:
+    SOC_PROJECT_ROOT: /app
+    SOC_DATA_DIR: /app/runtime
+    # compose 网络内用服务名；如果改用外部 Redis，把这里改成外部地址
+    REDIS_URL: redis://redis:6379/0
+  volumes:
+    - soc_runtime:/app/runtime
+  restart: unless-stopped
+  networks:
+    - soc_net
+
+services:
+  redis:
+    image: redis:7-alpine
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - noeviction
+    volumes:
+      - redis_data:/data
+    ports:
+      # 只绑定本机，避免把无鉴权 Redis 暴露到公网
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks:
+      - soc_net
+
+  bridge:
+    <<: *common
+    command: ["python", "-m", "soc_agent", "serve", "bridge", "--host", "0.0.0.0", "--port", "8000"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  tools:
+    <<: *common
+    command: ["python", "-m", "soc_agent", "serve", "tools", "--host", "0.0.0.0", "--port", "8001"]
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  approval:
+    <<: *common
+    command: ["python", "-m", "soc_agent", "serve", "approval", "--host", "0.0.0.0", "--port", "8002"]
+    ports:
+      - "8002:8002"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8002/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  consumer:
+    <<: *common
+    command: ["python", "-m", "soc_agent", "consume"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    # 消费者按 REDIS_CONSUMER 命名；多副本时给每个副本设置不同名字
+    # command: ["sh", "-c", "python -m soc_agent consume"]  # 多副本请配合 CONSUMER_WORKERS
+
+  # 仅用于本地验证 Dify HTTP 契约；生产 DIFY_MODE=api，不需要这个服务
+  mock-dify:
+    <<: *common
+    profiles: ["demo"]
+    command: ["python", "-m", "soc_agent", "serve", "mock-dify", "--host", "0.0.0.0", "--port", "8003"]
+    ports:
+      - "127.0.0.1:8003:8003"
+
+volumes:
+  soc_runtime:
+  redis_data:
+
+networks:
+  soc_net:
+    driver: bridge

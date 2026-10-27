@@ -1,0 +1,116 @@
+# ============================================================
+# Python
+# ============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+.venv/
+venv/
+__pypackages__/
+
+# 测试与类型检查缓存
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyright/
+.tox/
+.nox/
+.hypothesis/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# ============================================================
+# 环境变量与密钥
+# ============================================================
+.env
+.env.*
+*.env
+!.env.example
+!.env.sample
+!.env.template
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.secret
+*.secrets
+secrets/
+.secrets/
+
+# 本地覆盖配置
+docker-compose.override.yml
+docker-compose.*.local.yml
+config.local.*
+
+# ============================================================
+# 数据库、日志与运行产物
+# ============================================================
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.log
+*.log.*
+logs/
+log/
+traces.jsonl
+data/*.jsonl
+data/traces.sqlite3
+data/traces.sqlite3-*
+data/demo_runs/
+data/demo_traces.sqlite3*
+runtime/
+*.pid
+*.sock
+*.tmp
+.tmp/
+
+# 备份与临时文件
+*.bak
+*.orig
+*.rej
+*.swp
+*~
+
+# ============================================================
+# Dify 与本地演示产物
+# ============================================================
+.dify/
+demo-assets/
+recordings/
+*.mp4
+*.mov
+*.webm
+
+# ============================================================
+# 编辑器与系统文件
+# ============================================================
+.idea/
+.vscode/
+.vs/
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ============================================================
+# 其它
+# ============================================================
+node_modules/
+*.zip
+*.7z
+*.tar.gz
